@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Interactive Quiz Game</title>
+  <style>
+    body {
+      background: linear-gradient(120deg, #191a1d 0%, #cfdef3 100%);
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .quiz-container {
+      background: rgba(255,255,255,0.97);
+      padding: 32px 24px;
+      border-radius: 16px;
+      box-shadow: 0 2px 24px rgba(11,87,224,0.15), 0 1.5px 8px rgba(0,0,0,0.08);
+      width: 400px;
+      max-width: 95vw;
+      text-align: center;
+      backdrop-filter: blur(2px);
+      position: relative;
+      z-index: 1;
+    }
+    .question {
+      font-size: 1.2rem;
+      margin-bottom: 18px;
+      color: #0b57e0;
+      font-weight: bold;
+    }
+    .options {
+      margin-bottom: 18px;
+      text-align: left;
+    }
+    .options label {
+      display: block;
+      margin-bottom: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .options input[type="checkbox"]:checked + span,
+    .options input[type="radio"]:checked + span {
+      background: #e0eafc;
+      color: #0b57e0;
+      font-weight: bold;
+    }
+    .fill-blank {
+      margin-bottom: 18px;
+    }
+    .fill-blank input {
+      font-size: 1rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      width: 80%;
+      margin-top: 8px;
+    }
+    .btn {
+      padding: 8px 18px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #0078d4;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+      margin: 0 6px;
+      box-shadow: 0 2px 8px rgba(11,87,224,0.08);
+    }
+    .btn:hover {
+      background: #005fa3;
+      box-shadow: 0 4px 16px rgba(11,87,224,0.12);
+    }
+    .score {
+      font-size: 1.2rem;
+      color: #28a745;
+      font-weight: bold;
+      margin-top: 18px;
+    }
+    .result {
+      font-size: 1.1rem;
+      color: #0b57e0;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container" id="quiz">
+    <!-- Quiz will be rendered here -->
+  </div>
+  <script>
+    // Quiz questions
+    const questions = [
+      {
+        type: "single",
+        question: "Which language runs in a web browser?",
+        options: ["Java", "C", "Python", "JavaScript"],
+        answer: 3
+      },
+      {
+        type: "multi",
+        question: "Select all programming languages:",
+        options: ["HTML", "CSS", "Python", "Java"],
+        answer: [2, 3]
+      },
+      {
+        type: "fill",
+        question: "Fill in the blank: The capital of France is _____.",
+        answer: "paris"
+      },
+      {
+        type: "single",
+        question: "What does CSS stand for?",
+        options: [
+          "Computer Style Sheets",
+          "Cascading Style Sheets",
+          "Creative Style System",
+          "Colorful Style Sheets"
+        ],
+        answer: 1
+      }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let userAnswers = [];
+
+    function renderQuestion() {
+      const q = questions[current];
+      let html = `<div class="question">${q.question}</div>`;
+      if (q.type === "single") {
+        html += `<form class="options" id="options">`;
+        q.options.forEach((opt, idx) => {
+          html += `
+            <label>
+              <input type="radio" name="option" value="${idx}">
+              <span>${opt}</span>
+            </label>
+          `;
+        });
+        html += `</form>`;
+      } else if (q.type === "multi") {
+        html += `<form class="options" id="options">`;
+        q.options.forEach((opt, idx) => {
+          html += `
+            <label>
+              <input type="checkbox" name="option" value="${idx}">
+              <span>${opt}</span>
+            </label>
+          `;
+        });
+        html += `</form>`;
+      } else if (q.type === "fill") {
+        html += `<div class="fill-blank">
+          <input type="text" id="fillInput" placeholder="Type your answer here">
+        </div>`;
+      }
+      html += `<button class="btn" id="nextBtn">${current === questions.length - 1 ? "Finish" : "Next"}</button>`;
+      document.getElementById("quiz").innerHTML = html;
+
+      document.getElementById("nextBtn").onclick = handleNext;
+    }
+
+    function handleNext() {
+      const q = questions[current];
+      let correct = false;
+      if (q.type === "single") {
+        const selected = document.querySelector('input[name="option"]:checked');
+        if (selected) {
+          userAnswers[current] = parseInt(selected.value);
+          correct = userAnswers[current] === q.answer;
+        }
+      } else if (q.type === "multi") {
+        const selected = Array.from(document.querySelectorAll('input[name="option"]:checked')).map(i => parseInt(i.value));
+        userAnswers[current] = selected;
+        correct = JSON.stringify(selected.sort()) === JSON.stringify(q.answer.sort());
+      } else if (q.type === "fill") {
+        const input = document.getElementById("fillInput").value.trim().toLowerCase();
+        userAnswers[current] = input;
+        correct = input === q.answer;
+      }
+      if (correct) score++;
+      current++;
+      if (current < questions.length) {
+        renderQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    function showResult() {
+      let html = `<div class="score">Your Score: ${score} / ${questions.length}</div>`;
+      html += `<div class="result">`;
+      questions.forEach((q, idx) => {
+        html += `<div><strong>Q${idx+1}:</strong> ${q.question}<br>`;
+        html += `Your answer: `;
+        if (q.type === "single") {
+          html += q.options[userAnswers[idx]] ?? "<em>No answer</em>";
+        } else if (q.type === "multi") {
+          if (userAnswers[idx] && userAnswers[idx].length)
+            html += userAnswers[idx].map(i => q.options[i]).join(", ");
+          else
+            html += "<em>No answer</em>";
+        } else if (q.type === "fill") {
+          html += userAnswers[idx] || "<em>No answer</em>";
+        }
+        html += `<br>Correct answer: `;
+        if (q.type === "single") {
+          html += q.options[q.answer];
+        } else if (q.type === "multi") {
+          html += q.answer.map(i => q.options[i]).join(", ");
+        } else if (q.type === "fill") {
+          html += q.answer;
+        }
+        html += `</div><hr>`;
+      });
+      html += `</div><button class="btn" onclick="restartQuiz()">Restart Quiz</button>`;
+      document.getElementById("quiz").innerHTML = html;
+    }
+
+    function restartQuiz() {
+      current = 0;
+      score = 0;
+      userAnswers = [];
+      renderQuestion();
+    }
+
+    // Start quiz
+    renderQuestion();
+  </script>
+</body>
+</html>

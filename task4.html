@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Basic To-Do App</title>
+  <style>
+    body {
+      background: linear-gradient(120deg, #e0eafc 0%, #cfdef3 100%);
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .todo-container {
+      background: #fff;
+      padding: 32px 24px;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      width: 400px;
+      max-width: 95vw;
+    }
+    h2 {
+      text-align: center;
+      color: #0078d4;
+      margin-bottom: 18px;
+    }
+    .add-task {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .add-task input, .add-task textarea, .add-task input[type="datetime-local"] {
+      font-size: 1rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      flex: 1;
+    }
+    .add-task button {
+      padding: 8px 14px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #0078d4;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .add-task button:hover {
+      background: #005fa3;
+    }
+    .task-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .task-item {
+      background: #f0f8ff;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .task-item.completed {
+      background: #d4ffd4;
+      text-decoration: line-through;
+      color: #888;
+    }
+    .task-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .task-title {
+      font-weight: bold;
+      font-size: 1.05rem;
+    }
+    .task-desc {
+      font-size: 0.95rem;
+      color: #555;
+    }
+    .task-date {
+      font-size: 0.85rem;
+      color: #0078d4;
+    }
+    .task-actions button {
+      margin-left: 4px;
+      padding: 4px 8px;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 5px;
+      background: #0078d4;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .task-actions button:hover {
+      background: #005fa3;
+    }
+    .task-actions .delete-btn {
+      background: #dc3545;
+    }
+    .task-actions .delete-btn:hover {
+      background: #a71d2a;
+    }
+    .edit-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .edit-fields input, .edit-fields textarea, .edit-fields input[type="datetime-local"] {
+      font-size: 1rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="todo-container">
+    <h2>To-Do List</h2>
+    <div class="add-task">
+      <input type="text" id="taskTitle" placeholder="Task title">
+      <textarea id="taskDesc" placeholder="Description" rows="1"></textarea>
+      <input type="datetime-local" id="taskDate">
+      <button id="addBtn">Add</button>
+    </div>
+    <ul class="task-list" id="taskList"></ul>
+  </div>
+  <script>
+    let tasks = [];
+
+    function renderTasks() {
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+      tasks.forEach((task, idx) => {
+        const li = document.createElement('li');
+        li.className = 'task-item' + (task.completed ? ' completed' : '');
+        if (task.editing) {
+          li.innerHTML = `
+            <div class="edit-fields">
+              <input type="text" value="${task.title}" id="editTitle${idx}">
+              <textarea rows="1" id="editDesc${idx}">${task.desc}</textarea>
+              <input type="datetime-local" value="${task.date}" id="editDate${idx}">
+            </div>
+            <div class="task-actions">
+              <button onclick="saveEdit(${idx})">Save</button>
+              <button onclick="cancelEdit(${idx})">Cancel</button>
+            </div>
+          `;
+        } else {
+          li.innerHTML = `
+            <div class="task-info">
+              <span class="task-title">${task.title}</span>
+              <span class="task-desc">${task.desc}</span>
+              <span class="task-date">${task.date ? 'Due: ' + formatDate(task.date) : ''}</span>
+            </div>
+            <div class="task-actions">
+              <button onclick="toggleComplete(${idx})">${task.completed ? 'Undo' : 'Done'}</button>
+              <button onclick="editTask(${idx})">Edit</button>
+              <button class="delete-btn" onclick="deleteTask(${idx})">Delete</button>
+            </div>
+          `;
+        }
+        list.appendChild(li);
+      });
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      return d.toLocaleString();
+    }
+
+    document.getElementById('addBtn').onclick = function() {
+      const title = document.getElementById('taskTitle').value.trim();
+      const desc = document.getElementById('taskDesc').value.trim();
+      const date = document.getElementById('taskDate').value;
+      if (!title) {
+        alert('Please enter a task title.');
+        return;
+      }
+      tasks.push({ title, desc, date, completed: false, editing: false });
+      document.getElementById('taskTitle').value = '';
+      document.getElementById('taskDesc').value = '';
+      document.getElementById('taskDate').value = '';
+      renderTasks();
+    };
+
+    window.toggleComplete = function(idx) {
+      tasks[idx].completed = !tasks[idx].completed;
+      renderTasks();
+    };
+
+    window.editTask = function(idx) {
+      tasks[idx].editing = true;
+      renderTasks();
+    };
+
+    window.saveEdit = function(idx) {
+      const title = document.getElementById(`editTitle${idx}`).value.trim();
+      const desc = document.getElementById(`editDesc${idx}`).value.trim();
+      const date = document.getElementById(`editDate${idx}`).value;
+      if (!title) {
+        alert('Please enter a task title.');
+        return;
+      }
+      tasks[idx].title = title;
+      tasks[idx].desc = desc;
+      tasks[idx].date = date;
+      tasks[idx].editing = false;
+      renderTasks();
+    };
+
+    window.cancelEdit = function(idx) {
+      tasks[idx].editing = false;
+      renderTasks();
+    };
+
+    window.deleteTask = function(idx) {
+      tasks.splice(idx, 1);
+      renderTasks();
+    };
+
+    renderTasks();
+  </script>
+</body>
+</html>
