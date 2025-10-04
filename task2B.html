@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(120deg, #e0eafc 0%, #ffffff 100%);
+      animation: gradientMove 55s ease-in-out infinite alternate;
+    }
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+    /* Floating circles */
+    .circle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.18;
+      animation: float 12s infinite linear;
+      z-index: 0;
+    }
+    .circle1 {
+      width: 320px;
+      height: 320px;
+      background: hsl(339, 100%, 42%);
+      top: -80px;
+      left: -80px;
+      animation-delay: 0s;
+    }
+    .circle2 {
+      width: 180px;
+      height: 180px;
+      background: hwb(304 0% 2%);
+      bottom: 40px;
+      right: 60px;
+      animation-delay: 3s;
+    }
+    .circle3 {
+      width: 120px;
+      height: 120px;
+      background: hsl(125, 100%, 32%);
+      top: 60%;
+      left: 70%;
+      animation-delay: 0s;
+    }
+    @keyframes float {
+      0% { transform: translateY(0) scale(1);}
+      50% { transform: translateY(-30px) scale(1.05);}
+      100% { transform: translateY(0) scale(1);}
+    }
+    .calculator {
+      background: #000000;
+      padding: 24px 18px;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      width: 320px;
+      z-index: 1;
+    }
+    .display {
+      width: 100%;
+      height: 48px;
+      font-size: 1.7rem;
+      text-align: right;
+      padding: 8px;
+      margin-bottom: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #f0f8ff;
+      box-sizing: border-box;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      font-size: 1.2rem;
+      padding: 16px 0;
+      border: none;
+      border-radius: 8px;
+      background: #dde4e4;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+      z-index: 2;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    .operator {
+      background: #00c6fb;
+      color: #222;
+    }
+    .operator:hover {
+      background: #0078d4;
+      color: #fff;
+    }
+    .equal {
+      background: #28a745;
+      color: #fff;
+      grid-column: span 2;
+    }
+    .clear {
+      background: #dc3545;
+      color: #fff;
+    }
+    .error {
+      color: #dc3545;
+      font-size: 1rem;
+      text-align: right;
+      margin-top: 6px;
+      min-height: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div class="circle circle1"></div>
+  <div class="circle circle2"></div>
+  <div class="circle circle3"></div>
+  <div class="calculator">
+    <input type="text" class="display" id="display" readonly>
+    <div class="error" id="error"></div>
+    <div class="buttons">
+      <button data-value="7">7</button>
+      <button data-value="8">8</button>
+      <button data-value="9">9</button>
+      <button data-value="/" class="operator">÷</button>
+      <button data-value="4">4</button>
+      <button data-value="5">5</button>
+      <button data-value="6">6</button>
+      <button data-value="*" class="operator">×</button>
+      <button data-value="1">1</button>
+      <button data-value="2">2</button>
+      <button data-value="3">3</button>
+      <button data-value="-" class="operator">−</button>
+      <button data-value="0">0</button>
+      <button data-value=".">.</button>
+      <button data-value="+" class="operator">+</button>
+      <button class="clear" id="clearBtn">C</button>
+      <button class="equal" id="equalBtn">=</button>
+    </div>
+  </div>
+  <script>
+    const display = document.getElementById('display');
+    const errorDiv = document.getElementById('error');
+    const buttons = document.querySelectorAll('.buttons button[data-value]');
+    const clearBtn = document.getElementById('clearBtn');
+    const equalBtn = document.getElementById('equalBtn');
+
+    let input = '';
+
+    function updateDisplay() {
+      display.value = input;
+      errorDiv.textContent = '';
+    }
+
+    function showError(msg) {
+      errorDiv.textContent = msg;
+    }
+
+    function handleInput(value) {
+      if (input.length > 20) return; // Limit input length
+      input += value;
+      updateDisplay();
+    }
+
+    function clearInput() {
+      input = '';
+      updateDisplay();
+    }
+
+    function calculate() {
+      try {
+        // Prevent invalid expressions
+        if (!input || /[+\-*/.]$/.test(input)) {
+          showError('Invalid expression');
+          return;
+        }
+        // Replace division and multiplication symbols for eval
+        let expr = input.replace(/÷/g, '/').replace(/×/g, '*');
+        let result = eval(expr);
+        if (!isFinite(result)) throw new Error('Math Error');
+        input = result.toString();
+        updateDisplay();
+      } catch (e) {
+        showError('Error');
+      }
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        handleInput(btn.getAttribute('data-value'));
+      });
+    });
+
+    clearBtn.addEventListener('click', clearInput);
+    equalBtn.addEventListener('click', calculate);
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.key >= '0' && e.key <= '9') handleInput(e.key);
+      else if (['+', '-', '*', '/','.'].includes(e.key)) handleInput(e.key);
+      else if (e.key === 'Enter' || e.key === '=') calculate();
+      else if (e.key === 'Backspace') {
+        input = input.slice(0, -1);
+        updateDisplay();
+      } else if (e.key.toLowerCase() === 'c') clearInput();
+    });
+
+    updateDisplay();
+  </script>
+</body>
+</html>
